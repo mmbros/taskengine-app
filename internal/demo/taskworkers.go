@@ -1,4 +1,4 @@
-package main
+package demo
 
 import (
 	"fmt"
@@ -6,40 +6,6 @@ import (
 
 	"github.com/mmbros/taskengine"
 )
-
-// ================================================
-
-type ByTaskID []taskengine.TaskID
-
-func (s ByTaskID) Len() int {
-	return len(s)
-}
-
-func (s ByTaskID) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s ByTaskID) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
-// ================================================
-
-type ByWorkerID []taskengine.WorkerID
-
-func (s ByWorkerID) Len() int {
-	return len(s)
-}
-
-func (s ByWorkerID) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s ByWorkerID) Less(i, j int) bool {
-	return s[i] < s[j]
-}
-
-// ================================================
 
 type TaskWorkers map[taskengine.TaskID][]taskengine.WorkerID
 
@@ -80,5 +46,38 @@ func (t2w TaskWorkers) Print() {
 		wids := t2w[tid]
 		fmt.Printf("%2d) %s: %v\n", k+1, tid, wids)
 	}
-
 }
+
+// ================================================
+
+type ByTaskID []taskengine.TaskID
+
+func (s ByTaskID) Len() int {
+	return len(s)
+}
+
+func (s ByTaskID) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s ByTaskID) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+
+// ================================================
+
+type ByWorkerID []taskengine.WorkerID
+
+func (s ByWorkerID) Len() int {
+	return len(s)
+}
+
+func (s ByWorkerID) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s ByWorkerID) Less(i, j int) bool {
+	return s[i] < s[j]
+}
+
+// ================================================

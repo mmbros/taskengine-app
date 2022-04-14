@@ -1,4 +1,4 @@
-package main
+package demo
 
 import (
 	"fmt"
@@ -23,7 +23,29 @@ func formatCurrency(value int64) string {
 	return fmt.Sprintf("%.2f", float32(value)/100)
 }
 
-func initProgress(trackers int) progress.Writer {
+func trackerUnits(currency string) progress.Units {
+	u := UnitsCurrency
+	var symbol string
+	switch currency {
+	case "USD":
+		symbol = "$"
+	case "GBP":
+		symbol = "£"
+	case "EUR":
+		symbol = "€"
+	default:
+		symbol = currency
+	}
+	u.Notation = symbol + " "
+
+	return u
+}
+
+func trackerValue(price float32) int64 {
+	return int64(price * 100)
+}
+
+func NewProgress(trackers int) progress.Writer {
 
 	// instantiate a Progress Writer and set up the options
 	pw := progress.NewWriter()

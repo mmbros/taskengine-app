@@ -1,4 +1,4 @@
-package main
+package demo
 
 import (
 	"context"
@@ -7,70 +7,40 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/mmbros/taskengine"
 )
 
-var demoError error = errors.New("taskengine demo error")
+var ErrorResult error = errors.New("demo error result")
 
-// spread: perc of how many workers executes each tasks:
-//         100% - each task is executed by all worker
-//           0% - no worker executes the tasks
-type demoScenario struct {
+type Scenario struct {
 	Seed      int64
 	Workers   int
 	Instances int
 	Tasks     int
-	Spread    int
-	RandRes   randomResult
+
+	// Spread: perc of how many workers executes each tasks
+	// 100% - each task is executed by all worker
+	//   0% - no worker executes the tasks
+	Spread  int
+	RandRes RandomResult
 
 	ws  []*taskengine.Worker
 	wts taskengine.WorkerTasks
 }
 
-// ========================================================
-
-type randomResult struct {
-	mean    float64
-	stdDev  float64
-	errPerc int
-}
-
-var rndPrice = randomResult{
-	mean:   100,
-	stdDev: 50,
-}
-
-func (rr *randomResult) float64() float64 {
-	x := rand.NormFloat64()*rr.stdDev + rr.mean
-	if x < 0 {
-		x = 0
-	}
-	return x
-}
-
-func (rr *randomResult) int64() int64 {
-	return int64(rr.float64())
-}
-
-func (rr *randomResult) success() bool {
-	// errPerc = 0 .. 100
-	// n       = 1 .. 100
-
-	// if errPerc=  0 -> every n is greater than 0         -> always success
-	// if errPerc=100 -> every n is less or equal than 100 -> always error
-	n := rand.Intn(100) + 1
-	return n > rr.errPerc
+var rndPrice = RandomResult{
+	Mean:   100,
+	StdDev: 50,
 }
 
 // ========================================================
 
-type demoTask struct {
+type Task struct {
 	taskid string
-	rndres *randomResult
+	rndres *RandomResult
 }
 
-func (t *demoTask) TaskID() taskengine.TaskID { return taskengine.TaskID(t.taskid) }
+func (t *Task) TaskID() taskengine.TaskID { return taskengine.TaskID(t.taskid) }
 
 // ========================================================
 
@@ -82,32 +52,10 @@ type demoResult struct {
 
 func (res *demoResult) Error() error { return res.err }
 
-func (res *demoResult) TrackerUnits() progress.Units {
-	u := UnitsCurrency
-	var currency string
-	switch res.currency {
-	case "USD":
-		currency = "$"
-	case "GBP":
-		currency = "£"
-	case "EUR":
-		currency = "€"
-	default:
-		currency = res.currency
-	}
-	u.Notation = currency + " "
-
-	return u
-}
-
-func (res *demoResult) TrackerValue() int64 {
-	return int64(res.price * 100)
-}
-
 // ========================================================
 
 func demoWorkFn(ctx context.Context, worker *taskengine.Worker, workerInst int, task taskengine.Task) taskengine.Result {
-	stask := task.(*demoTask)
+	stask := task.(*Task)
 
 	msec := stask.rndres.int64()
 
@@ -118,7 +66,7 @@ func demoWorkFn(ctx context.Context, worker *taskengine.Worker, workerInst int, 
 		res.err = ctx.Err()
 	case <-time.After(time.Duration(msec) * time.Millisecond):
 		if !stask.rndres.success() {
-			res.err = demoError
+			res.err = ErrorResult
 		} else {
 			res.price = float32(rndPrice.float64())
 			if msec%2 == 0 {
@@ -152,15 +100,15 @@ func getID(prefix string, tot, n int) string {
 	return fmt.Sprintf("%[3]s%0[2]*[1]d", n, digits, prefix)
 }
 
-func (scnr *demoScenario) getWorkerID(n int) string {
+func (scnr *Scenario) getWorkerID(n int) string {
 	return getID("w", scnr.Workers, n)
 }
 
-func (scnr *demoScenario) getTaskID(n int) string {
+func (scnr *Scenario) getTaskID(n int) string {
 	return getID("t", scnr.Tasks, n)
 }
 
-func (scnr *demoScenario) RandomWorkersAndTasks() error {
+func (scnr *Scenario) RandomWorkersAndTasks() error {
 
 	rand.Seed(scnr.Seed)
 	ws := []*taskengine.Worker{}
@@ -185,7 +133,7 @@ func (scnr *demoScenario) RandomWorkersAndTasks() error {
 			if n <= scnr.Spread {
 				// assign the task to the worker
 				tid := scnr.getTaskID(tj)
-				task := &demoTask{
+				task := &Task{
 					taskid: tid,
 					rndres: &scnr.RandRes,
 				}
@@ -204,7 +152,7 @@ func (scnr *demoScenario) RandomWorkersAndTasks() error {
 			// assign the task to a worker
 			wj := rand.Intn(scnr.Workers) + 1
 			wid := taskengine.WorkerID(scnr.getWorkerID(wj))
-			task := &demoTask{
+			task := &Task{
 				taskid: tid,
 				rndres: &scnr.RandRes,
 			}
@@ -224,7 +172,7 @@ func (scnr *demoScenario) RandomWorkersAndTasks() error {
 	return nil
 }
 
-func (scnr *demoScenario) ExecuteEvents() (chan *taskengine.Event, error) {
+func (scnr *Scenario) ExecuteEvents() (chan *taskengine.Event, error) {
 
 	if scnr.ws == nil {
 		return nil, errors.New("must run RandomWorkersAndTasks before")
