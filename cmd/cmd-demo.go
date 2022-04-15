@@ -24,7 +24,7 @@ Options:
 Random Result options: 	
         --mean        int      mean value (default %[8]d)
         --stddev      int      standard deviation (default %[9]d)
-        --errperc     int      perc of task error (0..100) (default %[10]d)
+    -e, --errperc     int      perc of task error (0..100) (default %[10]d)
 `
 
 // stdDev:  100.0,
@@ -41,7 +41,7 @@ const (
 	namesSpread    = "spread"
 	namesMean      = "mean"
 	namesStdDev    = "stddev"
-	namesErrPerc   = "errperc"
+	namesErrPerc   = "errperc,e"
 )
 
 // Default args value
@@ -96,12 +96,12 @@ func parseExecDemo(fullname string, arguments []string) error {
 		return nil
 	}
 	if err == nil {
-		err = execDemo(os.Stdout, FirstToken(fullname, " "), &scenario)
+		err = execDemo(os.Stdout, FirstToken(fullname, " "), &scenario, showProgress)
 	}
 	return err
 }
 
-func execDemo(w io.Writer, appname string, scenario *demo.Scenario) error {
+func execDemo(w io.Writer, appname string, scenario *demo.Scenario, showProgress bool) error {
 
 	var (
 		err    error
@@ -110,15 +110,38 @@ func execDemo(w io.Writer, appname string, scenario *demo.Scenario) error {
 	fmt.Fprintf(w, "%+v\n", scenario)
 
 	err = scenario.RandomWorkersAndTasks()
+
 	if err == nil {
 		eventc, err = scenario.ExecuteEvents()
 	}
-
-	scenario.LoopWithProgress(eventc)
-
 	if err != nil {
 		return err
 	}
+
+	var wProgress io.Writer
+
+	if showProgress {
+		wProgress = w
+	}
+
+	// create the file
+	const fpath string = "test.json"
+
+	os.Remove(fpath)
+	fJson, err := os.Create(fpath)
+	if err != nil {
+		return err
+	}
+	// close the file with defer
+	defer fJson.Close()
+
+	stats := scenario.Run(eventc, wProgress, fJson)
+
+	fmt.Fprintf(w, "%d task completed (%d success, %d error) in %v\n",
+		stats.TaskCompleted(),
+		stats.TaskSuccess,
+		stats.TaskError,
+		stats.Elapsed())
 
 	return err
 }
