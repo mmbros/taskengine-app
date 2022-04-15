@@ -32,19 +32,20 @@ func formatCurrency(value int64) string {
 
 func trackerUnits(currency string) prog.Units {
 	u := unitsCurrency
-	var symbol string
-	switch currency {
-	case "USD":
-		symbol = "$"
-	case "GBP":
-		symbol = "£"
-	case "EUR":
-		symbol = "€"
-	default:
-		symbol = currency
-	}
-	u.Notation = symbol + " "
+	// var symbol string
+	// switch currency {
+	// case "USD":
+	// 	symbol = "$"
+	// case "GBP":
+	// 	symbol = "£"
+	// case "EUR":
+	// 	symbol = "€"
+	// default:
+	// 	symbol = currency
+	// }
+	// u.Notation = symbol + " "
 
+	u.Notation = currency + " "
 	return u
 }
 

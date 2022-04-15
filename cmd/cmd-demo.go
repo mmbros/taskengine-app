@@ -11,20 +11,32 @@ import (
 	"github.com/mmbros/taskengine-app/internal/demo"
 )
 
+// Spread: perc of how many workers executes each tasks
+// 100% - each task is executed by all worker
+//   0% - no worker executes the tasks
+
 const usageDemo = `Usage:
     %[1]s [options]
+
+Performs a demo scenario and show results. 
+
 Options:
     -w, --workers     int      number of workers (default %[2]d)
     -i, --instances   int      instances of each worker (default %[3]d)
     -t, --tasks       int      number of tasks (default %[4]d)
         --progress    bool     show progress of execution (default %[5]v)
-        --seed        int      xxxx (default %[6]d)
-    -s, --spread      int      xxxx (default %[7]d)
+        --seed        int      random seed generator (default %[6]d)
+    -s, --spread      int      perc of how many workers executes each tasks (default %[7]d)
+                                 100 each task is executed by all worker
+                                   0 no worker executes the tasks
+    -o, --output      path     pathname of the output file (default stdout)
+    -f, --force       bool     overwrite already existing output file
 
 Random Result options: 	
         --mean        int      mean value (default %[8]d)
         --stddev      int      standard deviation (default %[9]d)
     -e, --errperc     int      perc of task error (0..100) (default %[10]d)
+
 `
 
 // stdDev:  100.0,
@@ -42,6 +54,8 @@ const (
 	namesMean      = "mean"
 	namesStdDev    = "stddev"
 	namesErrPerc   = "errperc,e"
+	namesOutput    = "output,o"
+	namesForce     = "force,f"
 )
 
 // Default args value
@@ -60,11 +74,14 @@ const (
 func parseExecDemo(fullname string, arguments []string) error {
 
 	var (
-		scenario     demo.Scenario
+		scenario demo.Scenario
+		seed     int
+		mean     int
+		stddev   int
+
+		path         string
 		showProgress bool
-		seed         int
-		mean         int
-		stddev       int
+		force        bool
 	)
 
 	fs := NewFlagSet(fullname, usageDemo,
@@ -81,6 +98,8 @@ func parseExecDemo(fullname string, arguments []string) error {
 	flagx.AliasedIntVar(fs, &mean, namesMean, defaultMean, "")
 	flagx.AliasedIntVar(fs, &stddev, namesStdDev, defaultStdDev, "")
 	flagx.AliasedIntVar(fs, &scenario.RandRes.ErrPerc, namesErrPerc, defaultErrPerc, "")
+	flagx.AliasedStringVar(fs, &path, namesOutput, "", "")
+	flagx.AliasedBoolVar(fs, &force, namesForce, false, "")
 
 	// parse the arguments
 	err := fs.Parse(arguments)
@@ -95,19 +114,37 @@ func parseExecDemo(fullname string, arguments []string) error {
 		fs.Usage()
 		return nil
 	}
+
+	wOutput := os.Stdout
+	if path != "" {
+		// overwrite existing file oly if --force is specified
+		flag := os.O_CREATE | os.O_WRONLY
+		if !force {
+			flag |= os.O_EXCL
+		}
+
+		// create the file
+		wOutput, err = os.OpenFile(path, flag, 0666)
+		if err == nil {
+			defer wOutput.Close()
+		}
+	}
+
 	if err == nil {
-		err = execDemo(os.Stdout, FirstToken(fullname, " "), &scenario, showProgress)
+		err = execDemo(os.Stderr, wOutput, &scenario, showProgress)
 	}
 	return err
 }
 
-func execDemo(w io.Writer, appname string, scenario *demo.Scenario, showProgress bool) error {
+func execDemo(wInfo, wOut io.Writer, scenario *demo.Scenario, showProgress bool) error {
 
 	var (
 		err    error
 		eventc chan *taskengine.Event
 	)
-	fmt.Fprintf(w, "%+v\n", scenario)
+	if wInfo != nil {
+		fmt.Fprintf(wInfo, "%+v\n", scenario)
+	}
 
 	err = scenario.RandomWorkersAndTasks()
 
@@ -118,30 +155,19 @@ func execDemo(w io.Writer, appname string, scenario *demo.Scenario, showProgress
 		return err
 	}
 
-	var wProgress io.Writer
-
-	if showProgress {
-		wProgress = w
+	var wInfo2 io.Writer
+	if wInfo != nil && showProgress {
+		wInfo2 = wInfo
 	}
+	stats := scenario.Run(eventc, wInfo2, wOut)
 
-	// create the file
-	const fpath string = "test.json"
-
-	os.Remove(fpath)
-	fJson, err := os.Create(fpath)
-	if err != nil {
-		return err
+	if wInfo != nil {
+		fmt.Fprintf(wInfo, "\n%d task completed (%d success, %d error) in %v\n",
+			stats.TaskCompleted(),
+			stats.TaskSuccess,
+			stats.TaskError,
+			stats.Elapsed())
 	}
-	// close the file with defer
-	defer fJson.Close()
-
-	stats := scenario.Run(eventc, wProgress, fJson)
-
-	fmt.Fprintf(w, "%d task completed (%d success, %d error) in %v\n",
-		stats.TaskCompleted(),
-		stats.TaskSuccess,
-		stats.TaskError,
-		stats.Elapsed())
 
 	return err
 }

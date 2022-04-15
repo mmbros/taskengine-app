@@ -53,7 +53,10 @@ type demoResult struct {
 func (res *demoResult) Error() error { return res.err }
 
 func (res *demoResult) String() string {
-	return fmt.Sprintf("%.2f", res.price)
+	if res.err != nil {
+		return "n/a"
+	}
+	return fmt.Sprintf("%.2f %s", res.price, res.currency)
 }
 
 // ========================================================

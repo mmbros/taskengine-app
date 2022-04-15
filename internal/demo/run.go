@@ -31,12 +31,13 @@ func (stats *RunStats) TaskCompleted() int {
 func event2json(event *taskengine.Event) string {
 
 	jevent := struct {
+		TaskID     string    `json:"task_id"`
 		WorkerID   string    `json:"worker_id"`
 		WorkerInst int       `json:"worker_inst"`
-		TaskID     string    `json:"task_id"`
+		Status     string    `json:"status"`
+		Label      string    `json:"label,omitempty"`
 		TimeStart  time.Time `json:"time_start"`
 		TimeEnd    time.Time `json:"time_end"`
-		Status     string    `json:"status"`
 	}{
 		WorkerID:   string(event.WorkerID),
 		WorkerInst: event.WorkerInst,
@@ -44,10 +45,11 @@ func event2json(event *taskengine.Event) string {
 		TimeStart:  event.TimeStart,
 		TimeEnd:    event.TimeEnd,
 		Status:     strings.ToLower(event.Type().String()),
+		Label:      event.Result.String(),
 	}
 
-	js, err := json.MarshalIndent(jevent, "", " ")
-	// js, err := json.Marshal(jevent)
+	//js, err := json.MarshalIndent(jevent, "", " ")
+	js, err := json.Marshal(jevent)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +69,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 	rs.TimeStart = time.Now()
 
 	if wJson != nil {
-		fmt.Fprint(wJson, "[")
+		fmt.Fprint(wJson, "[\n")
 	}
 
 	var printComma bool
@@ -81,7 +83,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 
 		if wJson != nil && event.IsResult() {
 			if printComma {
-				fmt.Fprint(wJson, ",")
+				fmt.Fprint(wJson, ",\n")
 			} else {
 				printComma = true
 			}
@@ -108,7 +110,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 	rs.TimeEnd = time.Now()
 
 	if wJson != nil {
-		fmt.Fprint(wJson, "]")
+		fmt.Fprint(wJson, "\n]")
 	}
 
 	progr.Render()
