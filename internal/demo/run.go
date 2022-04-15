@@ -30,6 +30,8 @@ func (stats *RunStats) TaskCompleted() int {
 
 func event2json(event *taskengine.Event) string {
 
+	etype := event.Type()
+
 	jevent := struct {
 		TaskID     string    `json:"task_id"`
 		WorkerID   string    `json:"worker_id"`
@@ -38,14 +40,19 @@ func event2json(event *taskengine.Event) string {
 		Label      string    `json:"label,omitempty"`
 		TimeStart  time.Time `json:"time_start"`
 		TimeEnd    time.Time `json:"time_end"`
+		Err        string    `json:"err,omitempty"`
 	}{
 		WorkerID:   string(event.WorkerID),
 		WorkerInst: event.WorkerInst,
 		TaskID:     string(event.Task.TaskID()),
 		TimeStart:  event.TimeStart,
 		TimeEnd:    event.TimeEnd,
-		Status:     strings.ToLower(event.Type().String()),
+		Status:     strings.ToLower(etype.String()),
 		Label:      event.Result.String(),
+	}
+
+	if etype == taskengine.EventError {
+		jevent.Err = event.Result.Error().Error()
 	}
 
 	//js, err := json.MarshalIndent(jevent, "", " ")
