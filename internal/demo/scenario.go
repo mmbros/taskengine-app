@@ -52,6 +52,10 @@ type demoResult struct {
 
 func (res *demoResult) Error() error { return res.err }
 
+func (res *demoResult) String() string {
+	return fmt.Sprintf("%.2f", res.price)
+}
+
 // ========================================================
 
 func demoWorkFn(ctx context.Context, worker *taskengine.Worker, workerInst int, task taskengine.Task) taskengine.Result {
