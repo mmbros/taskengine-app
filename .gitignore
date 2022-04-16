@@ -17,3 +17,5 @@
 # Custom
 *.old
 *.json
+*.bin
+*debug_bin

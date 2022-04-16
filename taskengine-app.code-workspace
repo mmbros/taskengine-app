@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "server",
+				"type": "go",
+				"request": "launch",
+				"mode": "auto",
+				"program-OLD": "${fileDirname}",
+				"program": "${workspaceFolder}/main.go",
+				"args": ["server","--folder", "/home/mau/Code/prj/d3quote/data/"]
+			},
+			{
+				"name": "demo",
+				"type": "go",
+				"request": "launch",
+				"mode": "auto",
+				"program-OLD": "${fileDirname}",
+				"program": "${workspaceFolder}/main.go",
+				"args": ["demo", "--tasks", "20", "--workers", "3", "--output", "demo.json", "--progress=0", "-f"]
+			}			
+		]
+	}
+}
