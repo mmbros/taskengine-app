@@ -11,7 +11,12 @@ import (
 const usageApp = `Usage:
     %s <command> [options]
 Available Commands:
+    demo (d)     Execute a demo scenario, show progress
+                 and output results in json format
+    server (s)   Start an http server to show json files
+                 containing the results of execution
     version (v)  Version information
+
 Common options:
     -h, --help   Help informations
 `
@@ -28,7 +33,9 @@ func initApp() *flagx.Command {
 			"demo,d": {
 				ParseExec: parseExecDemo,
 			},
-		},
+			"server,s": {
+				ParseExec: parseExecServer,
+			}},
 	}
 
 	return app

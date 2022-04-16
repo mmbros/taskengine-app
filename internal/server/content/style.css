@@ -1,0 +1,30 @@
+p {
+  color: red;
+  background-color: white;
+}
+
+rect {
+  opacity: 25%;
+  stroke: gray;
+}
+
+rect.success {
+  fill: #4f4;
+}
+
+rect.canceled {
+  fill: #777;
+}
+
+rect.error {
+  fill: #f44;
+}
+
+rect.highlight {
+  opacity: 75%;
+  stroke: black;
+}
+
+text {
+  font-family: sans;
+}
