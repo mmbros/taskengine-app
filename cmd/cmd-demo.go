@@ -118,7 +118,7 @@ func parseExecDemo(fullname string, arguments []string) error {
 	wOutput := os.Stdout
 	if path != "" {
 		// overwrite existing file oly if --force is specified
-		flag := os.O_CREATE | os.O_WRONLY
+		flag := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 		if !force {
 			flag |= os.O_EXCL
 		}
