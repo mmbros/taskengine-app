@@ -11,6 +11,59 @@ fieldname = {
 
 
 
+function quotesJson2Data(d, msec_min) {
+    var msec_start = (new Date(d.time_start)).getTime() - msec_min;
+    var msec_end = (new Date(d.time_end)).getTime() - msec_min;
+    var msec_elapsed = msec_end - msec_start;
+
+    var tooltip = "isin: " + d.isin +
+        "\nstart: " + msec_start +
+        "\nend: " + msec_end;
+
+    var state;
+    if (typeof d.error === 'undefined') {
+        state = 'success';
+        tooltip = tooltip + "\nresult: " + d.currency + " " + d.price;
+    } else if (d.error.includes('context canceled')) {
+        state = 'canceled';
+    } else {
+        state = 'error';
+    }
+
+    return {
+        worker: d.source + "[" + d.instance + "]",
+        task: d.isin,
+        msec_start: msec_start,
+        msec_end: msec_end,
+        msec_elapsed: msec_elapsed,
+        class: state,
+        tooltip: tooltip
+    }
+}
+
+
+function demoJson2Data(d, msec_min) {
+    var msec_start = (new Date(d.time_start)).getTime() - msec_min;
+    var msec_end = (new Date(d.time_end)).getTime() - msec_min;
+    var msec_elapsed = msec_end - msec_start;
+
+    var tooltip = "task: " + d.task_id +
+        "\nstart: " + msec_start +
+        "\nend: " + msec_end +
+        "\nresult: " + d.label;
+
+    return {
+        worker: d.worker_id + "[" + d.worker_inst + "]",
+        task: d.task_id,
+        msec_start: msec_start,
+        msec_end: msec_end,
+        msec_elapsed: msec_elapsed,
+        class: d.status,
+        tooltip: tooltip
+    }
+}
+
+
 function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 }
@@ -31,64 +84,23 @@ function drawGraph(jsonData) {
 
     // transform jsonData to data
     var data = d3.map(jsonData, function (d) {
-        var msec_start = (new Date(d[fieldname.time_start])).getTime() - msec_min;
-        var msec_end = (new Date(d[fieldname.time_end])).getTime() - msec_min;
-        var msec_elapsed = msec_end - msec_start;
-
-        var state;
-        if (typeof d.error === 'undefined') {
-            state = 'success';
-        } else if (d.error.includes('context canceled')) {
-            state = 'canceled';
+        if (d.isin !== undefined) {
+            return quotesJson2Data(d, msec_min);
         } else {
-            state = 'error';
+            return demoJson2Data(d, msec_min);
         }
-
-        return {
-            worker: d[fieldname.worker_id] + "[" + d[fieldname.worker_inst] + "]",
-            task: d[fieldname.task_id],
-            msec_start: msec_start,
-            msec_end: msec_end,
-            msec_elapsed: msec_elapsed,
-            //            class: d[fieldname.status],
-            class: state,
-        };
     });
 
     // filter data items with small elapsed 
-    data = d3.filter(data, d => d.msec_elapsed >= 10);
+    // data = d3.filter(data, d => d.msec_elapsed >= 10);
 
     var workers = d3.sort(d3.map(data, d => d.worker).filter(onlyUnique));
     console.log(workers);
 
-//    var tasks = d3.sort(d3.map(data, d => d.task).filter(onlyUnique));
-//    console.log(tasks);
-
-    /*
-    function taskFillColor(data) {
-        var h0 = 0;
-        var index = tasks.findIndex(i => i == data.task);
-
-        var hue = Math.round(h0 + 360 * index / tasks.length);
-
-        var lum = 70;
-        if (data.class == "canceled") {
-            lum = 90;
-        }
-
-        var sat = 80;
-        if (data.class == "canceled") {
-            sat = 50;
-        }
-
-        return "hsl(" + hue + ", " + sat + "%, " + lum + "%)";
-    };
-
-    */
+    var tasks = d3.sort(d3.map(data, d => d.task).filter(onlyUnique));
+    console.log(tasks);
 
     var xleft = 150;
-
-
     var margin = { top: 10, right: 40, bottom: 30, left: xleft },
         width = 1600 - margin.left - margin.right,
         height = 800 - margin.top - margin.bottom;
@@ -137,7 +149,7 @@ function drawGraph(jsonData) {
         //      .attr("fill", d => isinFillColor(d) )
         .on("click", fnClick)
         .append("title")
-        .text(d => d.task + "\nstart: " + d.msec_start + "\nend: " + d.msec_end)
+        .text(d => d.tooltip)
         ;
 
 
@@ -148,7 +160,7 @@ function fnClick(event, data) {
     // console.log(event.target);
     // event.target.classList.toggle("highlight");
 
-    console.log(data);
+    // console.log(data);
 
     var taskid = data.task;
 
@@ -184,19 +196,32 @@ function onchange() {
 selectjsons.on('change', onchange);
 
 // fill the select with the data json files
+// d3.json("/data").then(
+//     function (data) {
+//         console.log(data);
+//         selectjsons
+//             .selectAll('option')
+//             .remove()
+//             .data(data)
+//             .enter()
+//             .append('option')
+//             .text(d => d)
+//             .attr("value", d => d)
+//             ;
+//         onchange();
+//     }
+// )
+
 d3.json("/data").then(
     function (data) {
-        // console.log(data);
+        console.log(data);
         selectjsons
             .selectAll('option')
-            .remove()
             .data(data)
-            .enter()
-            .append('option')
+            .join("option")
             .text(d => d)
             .attr("value", d => d)
             ;
         onchange();
     }
 )
-

@@ -15,7 +15,8 @@
 				"mode": "auto",
 				"program-OLD": "${fileDirname}",
 				"program": "${workspaceFolder}/main.go",
-				"args": ["server","--folder", "/home/mau/Code/prj/d3quote/data/"]
+				"args-save": ["server","--folder", "/home/mau/Code/prj/d3quote/data/"],
+				"args": ["server", "-r", "--folder", "./data"]
 			},
 			{
 				"name": "demo",
@@ -24,7 +25,7 @@
 				"mode": "auto",
 				"program-OLD": "${fileDirname}",
 				"program": "${workspaceFolder}/main.go",
-				"args": ["demo", "--tasks", "20", "--workers", "3", "--output", "demo.json", "--progress=0", "-f"]
+				"args": ["demo", "--tasks", "100", "--workers", "5", "-i=2", "--output", "demo-T100-W5x2.json", "--progress=0", "-f"]
 			}			
 		]
 	}
