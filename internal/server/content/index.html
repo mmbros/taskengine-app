@@ -10,14 +10,43 @@
 <h1>taskengine-app server</h1>
 
 
-<!-- Add a svg area, empty -->
 
-<select name="filejson" id="filejson">
-</select>
+<main>
+<input id="tab1" type="radio" name="tabs" checked>
+<label for="tab1">Info</label>
 
-<div id="graph"></div>
+<input id="tab2" type="radio" name="tabs">
+<label for="tab2">Workers</label>
 
-<div id="scatter_area"></div>
+<input id="tab3" type="radio" name="tabs">
+<label for="tab3">Tasks</label>
+
+<section id="content1">
+  <select name="filejson" id="filejson"></select>
+  <div id="info"></div>
+
+</section>
+        
+<section id="content2">
+  <div id="graphWorkers"></div>
+</section>
+  
+<section id="content3">
+    <div id="graphTasks"></div>
+</section>
+  
+
+
+</main>
+
+
+
+
+
+
+
+
+<!-- <div id="scatter_area"></div> -->
 
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.4.4/d3.min.js" integrity="sha512-hnFpvCiJ8Fr1lYLqcw6wLgFUOEZ89kWCkO+cEekwcWPIPKyknKV1eZmSSG3UxXfsSuf+z/SgmiYB1zFOg3l2UQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
 
