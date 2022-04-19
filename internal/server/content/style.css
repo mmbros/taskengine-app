@@ -1,5 +1,13 @@
 /* https://codepen.io/alvarotrigo/pen/VwMJgGO */
 
+
+
+:root {
+  --fg: #555;
+  --bg: #eee;
+  --bgalt: #fff;
+}
+
 *, *:before, *:after {
   margin: 0;
   padding: 0;
@@ -12,9 +20,25 @@ html, body {
 
 body {
   font: 14px/1  sans-serif;
-  color: #555;
-  background: #eee;
+  color: var(--fg);
+  background: var(--bg);
 }
+
+
+
+
+
+article {
+  display: grid;
+  grid-template-columns: min-content auto;
+  gap: 0px;
+  margin: 0;
+}
+
+aside {
+  padding: 10px;
+}
+
 
 
 
@@ -59,13 +83,13 @@ main {
   min-width: 320px;
   max-width: 100%;
   padding: 10px;
-  margin: 0 auto;
-  background: #fff;
+  margin: 0 0;
+  background: var(--bgalt);
 }
 
 section {
   display: none;
-  padding: 20px 0 0;
+  padding: 0px 0 0;
   border-top: 1px solid #ddd;
 }
 
@@ -142,5 +166,25 @@ input:checked + label {
 
 
 #info table {
-  margin-top: 3em;
+  width: 100%;
+  margin-top: 1em;
+  border-collapse: collapse;
+  background: var(--bgalt);
 }
+
+#info th, #info td {
+  border: 1px solid gray;
+  font-weight: normal;
+  text-align: left;
+  padding: 4px 4px;
+}
+
+#info th[scope="rowgroup"] {
+  color: #555;
+  background: var(--bg);
+  font-weight: bold;
+  border: none;
+  /* padding: 8px 4px; */
+}
+
+#info td:nth-child(2) { text-align: end; }

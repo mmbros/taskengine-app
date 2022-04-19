@@ -91,6 +91,8 @@ function demoJson2Scenario(jsonData) {
 
 
 function showInfo(scenario) {
+
+    clearInfoJob();
     var tasks_success = 0;
     Object.values(scenario.tasks).forEach(function (status) {
         if (status == "success") tasks_success++;
@@ -103,6 +105,10 @@ function showInfo(scenario) {
 
     var msecs = {}
     scenario.items.forEach(function (item) {
+
+        if (item.status == "canceled")
+            return;
+
         var msec = msecs[item.task_id];
         if (msec === undefined) {
             msecs[item.task_id] = {
@@ -113,53 +119,42 @@ function showInfo(scenario) {
             if (msec.min > item.msec_start) {
                 msec.min = item.msec_start
             }
-            if (msec.max > item.msec_end) {
+            if (msec.max < item.msec_end) {
                 msec.max = item.msec_end
             }
             msecs[item.task_id] = msec
         }
     })
 
-    var task_elapsed_min = 9999999999;
-    var task_elapsed_max = 0;
-    var elapsed_tot = 0;
+    var elapsed_min = 9999999999;
+    var elapsed_max = 0;
+    var elapsed_sum = 0;
+
+    console.log(msecs);
+
     Object.values(msecs).forEach(function (msec) {
         var elapsed = msec.max - msec.min;
-        if (task_elapsed_min > elapsed) {
-            task_elapsed_min = elapsed
+        if (elapsed_min > elapsed) {
+            elapsed_min = elapsed
         }
-        if (task_elapsed_max < elapsed) {
-            task_elapsed_max = elapsed
+        if (elapsed_max < elapsed) {
+            elapsed_max = elapsed
         }
-        elapsed_tot += elapsed;
+        elapsed_sum += elapsed;
     })
 
     var tasks_tot = Object.keys(scenario.tasks).length;
 
-    var info = [
-        ["msec_elapsed", scenario.msec_max - scenario.msec_min],
-        ["workers", scenario.workers.length],
-        ["tasks", tasks_tot],
-        ["success", tasks_success],
-        ["error", tasks_error],
-        ["task elapsed min", task_elapsed_min],
-        ["task elapsed avg", elapsed_tot / tasks_tot],
-        ["task elapsed max", task_elapsed_max]
-    ];
 
-    d3.select("#info")
-        .selectAll("table")
-        .remove()
-        ;
-    d3.select("#info")
-        .append("table")
-        .selectAll("tr")
-        .data(info)
-        .join("tr")
-        .selectAll("td")
-        .data(d => d)
-        .join("td")
-        .text(d => d);
+    document.getElementById("workers").innerHTML = `${scenario.workers.length}`;
+    document.getElementById("tasks").innerHTML = `${tasks_tot}`;
+    document.getElementById("tasks_success").innerHTML = `${tasks_success}`;
+    document.getElementById("tasks_error").innerHTML = `${tasks_error}`;
+
+    document.getElementById("elapsed_tot").innerHTML = `${scenario.msec_max - scenario.msec_min} ms`;
+    document.getElementById("elapsed_task_min").innerHTML = `${elapsed_min} ms`;
+    document.getElementById("elapsed_task_avg").innerHTML = `${Math.round(elapsed_sum / tasks_tot)} ms`;
+    document.getElementById("elapsed_task_max").innerHTML = `${elapsed_max} ms`;
 
 }
 
@@ -308,7 +303,84 @@ function fnClick(event, data) {
             task.classed("highlight", task.datum().task_id == task_id);
         })
         ;
+
+    showInfoJob(data);
 }
+
+
+function showInfoJob(data) {
+
+    var task_status = {};
+    var task_workers = 0;
+    var msec_min = 999999999;
+    var msec_max = 0;
+    var status = "canceled";
+
+    task_status["success"] = 0;
+    task_status["error"] = 0;
+    task_status["canceled"] = 0;
+
+    d3.select("#graphTasks")
+        .selectAll("rect")
+        .nodes()
+        .map(function (d) {
+            var job = d3.select(d).datum();
+            if (job.task_id == data.task_id) {
+                task_workers++;
+                task_status[job.status]++;
+
+                switch (job.status) {
+                    case "success":
+                        status = job.status;
+                    case "error":
+                        if (status != "success") {
+                            status = job.status;
+                        } 
+                }
+
+                if (job.status != "canceled") {
+                    if (msec_min > job.msec_start) {
+                        msec_min = job.msec_start
+                    }
+                    if (msec_max < job.msec_end) {
+                        msec_max = job.msec_end
+                    }
+                }
+            }
+        })
+        ;
+
+        document.getElementById("task_id").innerHTML = data.task_id;
+        document.getElementById("task_status").innerHTML = status;
+        document.getElementById("task_workers").innerHTML = task_workers;
+        document.getElementById("task_workers_success").innerHTML = task_status["success"];
+        document.getElementById("task_workers_error").innerHTML = task_status["error"];
+        document.getElementById("task_workers_canceled").innerHTML = task_status["canceled"];
+
+        document.getElementById("task_msec_min").innerHTML = `${msec_min} ms`;
+        document.getElementById("task_msec_max").innerHTML = `${msec_max} ms`;
+        document.getElementById("task_msec_elapsed").innerHTML = `${msec_max - msec_min} ms`;
+
+        document.getElementById("job_task_id").innerHTML = data.task_id;
+        document.getElementById("job_worker_id").innerHTML = data.worker_id;
+        document.getElementById("job_status").innerHTML = data.status;
+        document.getElementById("job_msec_start").innerHTML = `${data.msec_start} ms`;
+        document.getElementById("job_msec_end").innerHTML = `${data.msec_end} ms`;
+        document.getElementById("job_msec_elapsed").innerHTML = `${data.msec_end - data.msec_start} ms`;
+    
+
+}
+
+function clearInfoJob() {
+    const array = ["task_id", "task_status",
+        "task_workers", "task_workers_success", "task_workers_error", "task_workers_canceled",
+        "task_msec_min", "task_msec_max", "task_msec_elapsed",
+        "job_task_id", "job_worker_id", "job_status", "job_msec_start", "job_msec_end", "job_msec_elapsed"]
+    array.forEach(function (key) {
+        document.getElementById(key).innerHTML = "";
+    });
+}
+
 
 
 var selectjsons = d3.select("#filejson")
