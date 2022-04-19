@@ -1,5 +1,9 @@
-/*
 
+function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+};
+
+/*
 scenario = {
     msec_min,
     msec_max,
@@ -23,12 +27,7 @@ scenario = {
         ...
     ]
 }
-
 */
-function onlyUnique(value, index, self) {
-    return self.indexOf(value) === index;
-}
-
 function demoJson2Scenario(jsonData) {
     var items = jsonData.map(function (d) {
         return {
@@ -41,9 +40,9 @@ function demoJson2Scenario(jsonData) {
             worker: function () {
                 return `${this.worker_id}[${this.worker_inst}]`
             },
-
             tooltip: function () {
                 return "task: " + this.task_id +
+                    "\nworker: " + this.worker() +
                     "\nstart: " + this.msec_start +
                     "\nend: " + this.msec_end +
                     "\nresult: " + d.label;
@@ -87,12 +86,11 @@ function demoJson2Scenario(jsonData) {
         tasks: tasks,
         items: items,
     }
-}
-
+};
 
 function showInfo(scenario) {
+    showInfoJob(); // clear info
 
-    clearInfoJob();
     var tasks_success = 0;
     Object.values(scenario.tasks).forEach(function (status) {
         if (status == "success") tasks_success++;
@@ -130,8 +128,6 @@ function showInfo(scenario) {
     var elapsed_max = 0;
     var elapsed_sum = 0;
 
-    console.log(msecs);
-
     Object.values(msecs).forEach(function (msec) {
         var elapsed = msec.max - msec.min;
         if (elapsed_min > elapsed) {
@@ -145,18 +141,96 @@ function showInfo(scenario) {
 
     var tasks_tot = Object.keys(scenario.tasks).length;
 
+    var array = [
+        ["workers", `${scenario.workers.length}`],
+        ["tasks", `${tasks_tot}`],
+        ["tasks_success", `${tasks_success}`],
+        ["tasks_error", `${tasks_error}`],
+        ["elapsed_tot", `${scenario.msec_max - scenario.msec_min} ms`],
+        ["elapsed_task_min", `${elapsed_min} ms`],
+        ["elapsed_task_avg", `${Math.round(elapsed_sum / tasks_tot)} ms`],
+        ["elapsed_task_max", `${elapsed_max} ms`]
+    ];
+    array.forEach(function (d) {
+        document.getElementById(d[0]).innerHTML = d[1];
+    });
+};
 
-    document.getElementById("workers").innerHTML = `${scenario.workers.length}`;
-    document.getElementById("tasks").innerHTML = `${tasks_tot}`;
-    document.getElementById("tasks_success").innerHTML = `${tasks_success}`;
-    document.getElementById("tasks_error").innerHTML = `${tasks_error}`;
+function showInfoJob(data) {
+    if (data === undefined) {
+        // clear
+        const array = ["task_id", "task_status",
+            "task_workers", "task_workers_success", "task_workers_error", "task_workers_canceled",
+            "task_msec_min", "task_msec_max", "task_msec_elapsed",
+            "job_task_id", "job_worker_id", "job_status", "job_msec_start", "job_msec_end", "job_msec_elapsed"]
+        array.forEach(function (key) {
+            document.getElementById(key).innerHTML = "";
+        });
+        return;
+    }
 
-    document.getElementById("elapsed_tot").innerHTML = `${scenario.msec_max - scenario.msec_min} ms`;
-    document.getElementById("elapsed_task_min").innerHTML = `${elapsed_min} ms`;
-    document.getElementById("elapsed_task_avg").innerHTML = `${Math.round(elapsed_sum / tasks_tot)} ms`;
-    document.getElementById("elapsed_task_max").innerHTML = `${elapsed_max} ms`;
+    var task_workers = 0;
+    var msec_min = 999999999;
+    var msec_max = 0;
+    var status = "canceled";
+    var task_status = {};
 
+    task_status["success"] = 0;
+    task_status["error"] = 0;
+    task_status["canceled"] = 0;
+
+    d3.select("#graphTasks")
+        .selectAll("rect")
+        .nodes()
+        .map(function (d) {
+            var job = d3.select(d).datum();
+            if (job.task_id == data.task_id) {
+                task_workers++;
+                task_status[job.status]++;
+
+                switch (job.status) {
+                    case "success":
+                        status = job.status;
+                    case "error":
+                        if (status != "success") {
+                            status = job.status;
+                        }
+                }
+
+                if (job.status != "canceled") {
+                    if (msec_min > job.msec_start) {
+                        msec_min = job.msec_start
+                    }
+                    if (msec_max < job.msec_end) {
+                        msec_max = job.msec_end
+                    }
+                }
+            }
+        })
+
+    var array = [
+        ["task_id", data.task_id],
+        ["task_status", status],
+        ["task_workers", task_workers],
+        ["task_workers_success", task_status["success"]],
+        ["task_workers_error", task_status["error"]],
+        ["task_workers_canceled", task_status["canceled"]],
+        ["task_msec_min", `${msec_min} ms`],
+        ["task_msec_max", `${msec_max} ms`],
+        ["task_msec_elapsed", `${msec_max - msec_min} ms`],
+        ["job_task_id", data.task_id],
+        ["job_worker_id", data.worker_id],
+        ["job_status", data.status],
+        ["job_msec_start", `${data.msec_start} ms`],
+        ["job_msec_end", `${data.msec_end} ms`],
+        ["job_msec_elapsed", `${data.msec_end - data.msec_start} ms`]
+    ];
+
+    array.forEach(function (d) {
+        document.getElementById(d[0]).innerHTML = d[1];
+    });
 }
+
 
 function drawGraphWorkers(scenario) {
     var margin = { top: 10, right: 40, bottom: 30, left: 100 },
@@ -204,7 +278,7 @@ function drawGraphWorkers(scenario) {
         .attr("width", d => x(d.msec_end - d.msec_start))
         .attr("height", y.bandwidth())
         .attr("class", d => d.status)
-        .on("click", fnClick)
+        .on("click", graph_onclick)
         .append("title")
         .text(d => d.tooltip())
         ;
@@ -228,10 +302,7 @@ function drawGraphTasks(scenario) {
         .attr("transform",
             "translate(" + margin.left + "," + margin.top + ")");
 
-
-
     taskids = d3.sort(Object.keys(scenario.tasks));
-
 
     // X scale and Axis
     var x = d3.scaleLinear()
@@ -264,18 +335,14 @@ function drawGraphTasks(scenario) {
         .attr("width", d => x(d.msec_end - d.msec_start))
         .attr("height", y.bandwidth())
         .attr("class", d => d.status)
-        .on("click", fnClick)
+        .on("click", graph_onclick)
         .append("title")
         .text(d => d.tooltip())
         ;
-
 };
 
-
-
-function onchange() {
-    selectValue = selectjsons.property('value');
-    d3.json("/data/" + selectValue).then(
+function jsonGet(filename) {
+    d3.json("/data/" + filename).then(
         function (jsonData) {
             var scenario = demoJson2Scenario(jsonData);
             drawGraphWorkers(scenario);
@@ -285,121 +352,45 @@ function onchange() {
     );
 };
 
-function fnClick(event, data) {
-    var task_id = data.task_id;
-    d3.select("#graphWorkers")
-        .selectAll("rect")
-        .nodes()
-        .map(function (d) {
-            var task = d3.select(d);
-            task.classed("highlight", task.datum().task_id == task_id);
-        })
-        ;
-    d3.select("#graphTasks")
-        .selectAll("rect")
-        .nodes()
-        .map(function (d) {
-            var task = d3.select(d);
-            task.classed("highlight", task.datum().task_id == task_id);
-        })
-        ;
+function select_onchange() {
+    jsonGet(this.value);
+};
+
+function graph_onclick(event, data) {
+    var fn = function (d) {
+        var task = d3.select(d);
+        var datum = task.datum();
+        task.classed("highlight", datum.task_id == data.task_id);
+        task.classed("current", (datum.task_id == data.task_id) && (datum.worker_id == data.worker_id));
+    }
+
+    d3.select("#graphWorkers").selectAll("rect").nodes().map(fn);
+    d3.select("#graphTasks").selectAll("rect").nodes().map(fn);
+
 
     showInfoJob(data);
-}
+};
 
+function initSelect(selector) {
+    var theSelect = d3.select(selector)
 
-function showInfoJob(data) {
+    // bind select change event
+    theSelect.on('change', select_onchange);
 
-    var task_status = {};
-    var task_workers = 0;
-    var msec_min = 999999999;
-    var msec_max = 0;
-    var status = "canceled";
+    // fill the select with the data json files
+    d3.json("/data").then(
+        function (data) {
+            // console.log(data);
+            theSelect
+                .selectAll('option')
+                .data(data)
+                .join("option")
+                .text(d => d)
+                .attr("value", d => d)
+                ;
+            jsonGet(theSelect.property('value'));
+        }
+    )
+};
 
-    task_status["success"] = 0;
-    task_status["error"] = 0;
-    task_status["canceled"] = 0;
-
-    d3.select("#graphTasks")
-        .selectAll("rect")
-        .nodes()
-        .map(function (d) {
-            var job = d3.select(d).datum();
-            if (job.task_id == data.task_id) {
-                task_workers++;
-                task_status[job.status]++;
-
-                switch (job.status) {
-                    case "success":
-                        status = job.status;
-                    case "error":
-                        if (status != "success") {
-                            status = job.status;
-                        } 
-                }
-
-                if (job.status != "canceled") {
-                    if (msec_min > job.msec_start) {
-                        msec_min = job.msec_start
-                    }
-                    if (msec_max < job.msec_end) {
-                        msec_max = job.msec_end
-                    }
-                }
-            }
-        })
-        ;
-
-        document.getElementById("task_id").innerHTML = data.task_id;
-        document.getElementById("task_status").innerHTML = status;
-        document.getElementById("task_workers").innerHTML = task_workers;
-        document.getElementById("task_workers_success").innerHTML = task_status["success"];
-        document.getElementById("task_workers_error").innerHTML = task_status["error"];
-        document.getElementById("task_workers_canceled").innerHTML = task_status["canceled"];
-
-        document.getElementById("task_msec_min").innerHTML = `${msec_min} ms`;
-        document.getElementById("task_msec_max").innerHTML = `${msec_max} ms`;
-        document.getElementById("task_msec_elapsed").innerHTML = `${msec_max - msec_min} ms`;
-
-        document.getElementById("job_task_id").innerHTML = data.task_id;
-        document.getElementById("job_worker_id").innerHTML = data.worker_id;
-        document.getElementById("job_status").innerHTML = data.status;
-        document.getElementById("job_msec_start").innerHTML = `${data.msec_start} ms`;
-        document.getElementById("job_msec_end").innerHTML = `${data.msec_end} ms`;
-        document.getElementById("job_msec_elapsed").innerHTML = `${data.msec_end - data.msec_start} ms`;
-    
-
-}
-
-function clearInfoJob() {
-    const array = ["task_id", "task_status",
-        "task_workers", "task_workers_success", "task_workers_error", "task_workers_canceled",
-        "task_msec_min", "task_msec_max", "task_msec_elapsed",
-        "job_task_id", "job_worker_id", "job_status", "job_msec_start", "job_msec_end", "job_msec_elapsed"]
-    array.forEach(function (key) {
-        document.getElementById(key).innerHTML = "";
-    });
-}
-
-
-
-var selectjsons = d3.select("#filejson")
-
-
-// bind select change event
-selectjsons.on('change', onchange);
-
-// fill the select with the data json files
-d3.json("/data").then(
-    function (data) {
-        // console.log(data);
-        selectjsons
-            .selectAll('option')
-            .data(data)
-            .join("option")
-            .text(d => d)
-            .attr("value", d => d)
-            ;
-        onchange();
-    }
-)
+initSelect("#filejson");

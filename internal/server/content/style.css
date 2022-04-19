@@ -45,6 +45,7 @@ aside {
 rect {
   opacity: 25%;
   stroke: gray;
+  stroke-width: 1;
 }
 
 rect.success {
@@ -57,14 +58,17 @@ rect.canceled {
 
 rect.error {
   fill: #f44;
+  stroke-width: 1;
 }
 
 rect.highlight {
   opacity: 75%;
-  stroke: black;
 }
 
-
+rect.current {
+  stroke: black;
+  stroke-width: 2;
+}
 
 
 
@@ -108,26 +112,9 @@ label {
 }
 
 label:before {
-  /* font-family: fontawesome; */
   font-weight: normal;
   margin-right: 10px;
 }
-/* 
-label[for*='1']:before {
-  content: '\f1cb';
-}
-
-label[for*='2']:before {
-  content: '\f17d';
-}
-
-label[for*='3']:before {
-  content: '\f16b';
-}
-
-label[for*='4']:before {
-  content: '\f1a9';
-} */
 
 label:hover {
   color: #888;
