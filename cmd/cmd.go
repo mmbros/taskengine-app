@@ -10,12 +10,13 @@ import (
 
 const usageApp = `Usage:
     %s <command> [options]
+
 Available Commands:
-    demo (d)     Execute a demo scenario, show progress
-                 and output results in json format
-    server (s)   Start an http server to show json files
-                 containing the results of execution
-    version (v)  Version information
+    demo (d, dem)     Execute a demo scenario, show progress
+                      and output results in json format
+    server (s, ser)   Start an http server to show json files
+                      containing the results of execution
+    version (v, ver)  Print version information
 
 Common options:
     -h, --help   Help informations
@@ -27,13 +28,13 @@ func initApp() *flagx.Command {
 		ParseExec: parseExecApp,
 
 		SubCmd: map[string]*flagx.Command{
-			"version,v": {
+			"version,v,ver": {
 				ParseExec: parseExecVersion,
 			},
-			"demo,d": {
+			"demo,d,dem": {
 				ParseExec: parseExecDemo,
 			},
-			"server,s": {
+			"server,s,ser": {
 				ParseExec: parseExecServer,
 			}},
 	}
