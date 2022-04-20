@@ -40,6 +40,13 @@ Options:
 - `folder` folder containing the json files
 - `recursive` search recursively all the json files of the sub-folders
 
+### Workers graph
+![Workers graph](https://user-images.githubusercontent.com/11505218/164333012-857812f6-85b1-4909-ae4c-bf17b149c278.png "Workers graph")
+
+### Tasks graph
+![Tasks graph](https://user-images.githubusercontent.com/11505218/164334083-8f356237-7208-4e44-aa6d-865272a9da6c.png "Tasks graph")
+
+
 ## `version` command
 
 Prints version informations.
