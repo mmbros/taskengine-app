@@ -10,10 +10,12 @@ import (
 )
 
 const usageVersion = `Usage:
-    %s
+    %s [-b | --build-options]
+
 Prints version informations.
+
 Options:
-    -b, --build-options        also print build options
+    -b, --build-options  bool   print verion with build options
 `
 
 // Names of the command line arguments (flagx names)

@@ -8,13 +8,19 @@ import (
 )
 
 const usageView = `Usage:
-    %[1]s
-Start an http server to read the json files and show a graph of workers executions.
+    %[1]s [options]
+
+Start an http server to view a page with graphs based upon
+the taskengine json files created with the demo command.
 
 Options:
-    -f, --folder        folder containing the json files (default %[2]q)
-    -r, --recursive     search recursively all the json files of the sub-folders (default %[3]v)
-    -a, --address       server address and port (default %[4]q)
+    -a, --address    string   server address and port (default %[4]q)
+    -f, --folder     path     folder containing the json files (default %[2]q)
+    -r, --recursive  bool     search recursively all the json files of the 
+                              sub-folders (default %[3]v)
+Examples:
+    # view the json files of the ./demo folder 
+    %[1]s --folder ./demo
 `
 
 // Names of the command line arguments (flagx names)

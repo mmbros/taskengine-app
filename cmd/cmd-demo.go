@@ -18,7 +18,7 @@ import (
 const usageDemo = `Usage:
     %[1]s [options]
 
-Performs a demo scenario and show results. 
+Performs a demo scenario and save results in json format. 
 
 Options:
     -w, --workers     int      number of workers (default %[2]d)
@@ -37,6 +37,12 @@ Random Result options:
         --stddev      int      standard deviation (default %[9]d)
     -e, --errperc     int      perc of task error (0..100) (default %[10]d)
 
+Examples:
+    # print results to file with progress
+    %[1]s --output out.json
+
+    # print results to stdout without progress
+    %[1]s --progress=0
 `
 
 // stdDev:  100.0,
