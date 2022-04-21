@@ -77,31 +77,44 @@ const (
 	defaultErrPerc   = 50
 )
 
+type params struct {
+	force    bool
+	output   string
+	progress bool
+	scenario demo.Scenario
+}
+
+func (p *params) String() string {
+	// return fmt.Sprintf("%#v", p)
+	return fmt.Sprintf("force=%v output=%q progress=%v seed=%d workers=%d instances=%d tasks=%d spread=%v mean=%v stddev=%v errperc=%d",
+		p.force, p.output, p.progress, p.scenario.Seed,
+		p.scenario.Workers, p.scenario.Instances, p.scenario.Tasks,
+		p.scenario.Spread,
+		p.scenario.RandRes.Mean, p.scenario.RandRes.StdDev, p.scenario.RandRes.ErrPerc,
+	)
+}
+
 func parseExecDemo(fullname string, arguments []string) error {
 
-	var (
-		scenario     demo.Scenario
-		path         string
-		showProgress bool
-		force        bool
-	)
+	var p params
 
 	fs := NewFlagSet(fullname, usageDemo,
 		fullname, defaultWorkers, defaultInstances, defaultTasks, defaultProgress,
 		defaultSeed, defaultSpread, defaultMean, defaultStdDev, defaultErrPerc)
 
-	flagx.AliasedIntVar(fs, &scenario.Workers, namesWorkers, defaultWorkers, "")
-	flagx.AliasedIntVar(fs, &scenario.Instances, namesInstances, defaultInstances, "")
-	flagx.AliasedIntVar(fs, &scenario.Tasks, namesTasks, defaultTasks, "")
-	flagx.AliasedBoolVar(fs, &showProgress, namesProgress, defaultProgress, "")
-	flagx.AliasedInt64Var(fs, &scenario.Seed, namesSeed, defaultSeed, "")
-	flagx.AliasedIntVar(fs, &scenario.Spread, namesSpread, defaultSpread, "")
+	flagx.AliasedBoolVar(fs, &p.force, namesForce, false, "")
+	flagx.AliasedStringVar(fs, &p.output, namesOutput, "", "")
+	flagx.AliasedBoolVar(fs, &p.progress, namesProgress, defaultProgress, "")
 
-	flagx.AliasedFloat64Var(fs, &scenario.RandRes.Mean, namesMean, defaultMean, "")
-	flagx.AliasedFloat64Var(fs, &scenario.RandRes.StdDev, namesStdDev, defaultStdDev, "")
-	flagx.AliasedIntVar(fs, &scenario.RandRes.ErrPerc, namesErrPerc, defaultErrPerc, "")
-	flagx.AliasedStringVar(fs, &path, namesOutput, "", "")
-	flagx.AliasedBoolVar(fs, &force, namesForce, false, "")
+	flagx.AliasedIntVar(fs, &p.scenario.Workers, namesWorkers, defaultWorkers, "")
+	flagx.AliasedIntVar(fs, &p.scenario.Instances, namesInstances, defaultInstances, "")
+	flagx.AliasedIntVar(fs, &p.scenario.Tasks, namesTasks, defaultTasks, "")
+	flagx.AliasedInt64Var(fs, &p.scenario.Seed, namesSeed, defaultSeed, "")
+	flagx.AliasedIntVar(fs, &p.scenario.Spread, namesSpread, defaultSpread, "")
+
+	flagx.AliasedFloat64Var(fs, &p.scenario.RandRes.Mean, namesMean, defaultMean, "")
+	flagx.AliasedFloat64Var(fs, &p.scenario.RandRes.StdDev, namesStdDev, defaultStdDev, "")
+	flagx.AliasedIntVar(fs, &p.scenario.RandRes.ErrPerc, namesErrPerc, defaultErrPerc, "")
 
 	// parse the arguments
 	err := fs.Parse(arguments)
@@ -112,51 +125,55 @@ func parseExecDemo(fullname string, arguments []string) error {
 		return nil
 	}
 
+	if err != nil {
+		return err
+	}
+
 	wOutput := os.Stdout
-	if path != "" {
-		// overwrite existing file oly if --force is specified
+	if p.output != "" {
+		// overwrite existing file only if --force is specified
 		flag := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
-		if !force {
-			flag |= os.O_EXCL
+		if !p.force {
+			flag |= os.O_EXCL // file must not exists
 		}
 
 		// create the file
-		wOutput, err = os.OpenFile(path, flag, 0666)
-		if err == nil {
-			defer wOutput.Close()
+		wOutput, err = os.OpenFile(p.output, flag, 0666)
+		if err != nil {
+			return err
 		}
+		defer wOutput.Close()
 	}
 
-	if err == nil {
-		err = execDemo(os.Stderr, wOutput, &scenario, showProgress)
-	}
+	err = execDemo(os.Stderr, wOutput, &p)
+
 	return err
 }
 
-func execDemo(wInfo, wOut io.Writer, scenario *demo.Scenario, showProgress bool) error {
+func execDemo(wInfo, wOut io.Writer, p *params) error {
 
 	var (
 		err    error
 		eventc chan *taskengine.Event
 	)
 	if wInfo != nil {
-		fmt.Fprintf(wInfo, "%+v\n", scenario)
+		fmt.Fprintln(wInfo, p.String())
 	}
 
-	err = scenario.RandomWorkersAndTasks()
+	err = p.scenario.RandomWorkersAndTasks()
 
 	if err == nil {
-		eventc, err = scenario.ExecuteEvents()
+		eventc, err = p.scenario.ExecuteEvents()
 	}
 	if err != nil {
 		return err
 	}
 
-	var wInfo2 io.Writer
-	if wInfo != nil && showProgress {
-		wInfo2 = wInfo
+	var wProgress io.Writer
+	if wInfo != nil && p.progress {
+		wProgress = wInfo
 	}
-	stats := scenario.Run(eventc, wInfo2, wOut)
+	stats := p.scenario.Run(eventc, wProgress, wOut)
 
 	if wInfo != nil {
 		fmt.Fprintf(wInfo, "\n%d task completed (%d success, %d error) in %v\n",
