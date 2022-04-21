@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/jedib0t/go-pretty/v6 v6.3.1
-	github.com/mmbros/flagx v0.1.0
+	github.com/mmbros/flagx v0.1.1
 	github.com/mmbros/taskengine v0.3.0
 )
 

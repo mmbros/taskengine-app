@@ -25,7 +25,7 @@
 				"mode": "auto",
 				"program-OLD": "${fileDirname}",
 				"program": "${workspaceFolder}/main.go",
-				"args": ["demo", "--tasks", "100", "--workers", "5", "-i=2", "--output", "demo-T100-W5x2.json", "--progress=0", "-f"]
+				"args": ["demo", "--tasks", "100", "--workers", "5", "-i=2", "--mean", "401.09", "-o", "demo-T100-W5x2.json", "--progress=0", "-f"]
 			}			
 		]
 	}

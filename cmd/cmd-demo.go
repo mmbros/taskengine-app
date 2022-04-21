@@ -80,11 +80,7 @@ const (
 func parseExecDemo(fullname string, arguments []string) error {
 
 	var (
-		scenario demo.Scenario
-		seed     int
-		mean     int
-		stddev   int
-
+		scenario     demo.Scenario
 		path         string
 		showProgress bool
 		force        bool
@@ -98,22 +94,17 @@ func parseExecDemo(fullname string, arguments []string) error {
 	flagx.AliasedIntVar(fs, &scenario.Instances, namesInstances, defaultInstances, "")
 	flagx.AliasedIntVar(fs, &scenario.Tasks, namesTasks, defaultTasks, "")
 	flagx.AliasedBoolVar(fs, &showProgress, namesProgress, defaultProgress, "")
-	flagx.AliasedIntVar(fs, &seed, namesSeed, defaultSeed, "")
+	flagx.AliasedInt64Var(fs, &scenario.Seed, namesSeed, defaultSeed, "")
 	flagx.AliasedIntVar(fs, &scenario.Spread, namesSpread, defaultSpread, "")
 
-	flagx.AliasedIntVar(fs, &mean, namesMean, defaultMean, "")
-	flagx.AliasedIntVar(fs, &stddev, namesStdDev, defaultStdDev, "")
+	flagx.AliasedFloat64Var(fs, &scenario.RandRes.Mean, namesMean, defaultMean, "")
+	flagx.AliasedFloat64Var(fs, &scenario.RandRes.StdDev, namesStdDev, defaultStdDev, "")
 	flagx.AliasedIntVar(fs, &scenario.RandRes.ErrPerc, namesErrPerc, defaultErrPerc, "")
 	flagx.AliasedStringVar(fs, &path, namesOutput, "", "")
 	flagx.AliasedBoolVar(fs, &force, namesForce, false, "")
 
 	// parse the arguments
 	err := fs.Parse(arguments)
-
-	// TODO flagx: create AliasedInt64Var, AliasedFloat64Var
-	scenario.Seed = int64(seed)
-	scenario.RandRes.Mean = float64(mean)
-	scenario.RandRes.StdDev = float64(stddev)
 
 	// handle help
 	if err == flag.ErrHelp {
