@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/mmbros/taskengine"
@@ -33,21 +32,21 @@ func event2json(event *taskengine.Event) string {
 	etype := event.Type()
 
 	jevent := struct {
-		TaskID     string    `json:"task_id"`
-		WorkerID   string    `json:"worker_id"`
-		WorkerInst int       `json:"worker_inst"`
-		Status     string    `json:"status"`
-		Label      string    `json:"label,omitempty"`
-		TimeStart  time.Time `json:"time_start"`
-		TimeEnd    time.Time `json:"time_end"`
-		Err        string    `json:"err,omitempty"`
+		TaskID     string               `json:"task_id"`
+		WorkerID   string               `json:"worker_id"`
+		WorkerInst int                  `json:"worker_inst"`
+		Status     taskengine.EventType `json:"status"`
+		Label      string               `json:"label,omitempty"`
+		TimeStart  time.Time            `json:"time_start"`
+		TimeEnd    time.Time            `json:"time_end"`
+		Err        string               `json:"err,omitempty"`
 	}{
 		WorkerID:   string(event.WorkerID),
 		WorkerInst: event.WorkerInst,
 		TaskID:     string(event.Task.TaskID()),
 		TimeStart:  event.TimeStart,
 		TimeEnd:    event.TimeEnd,
-		Status:     strings.ToLower(etype.String()),
+		Status:     etype,
 		Label:      event.Result.String(),
 	}
 
@@ -88,7 +87,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 
 		progr.InitTrackerIfNew(tid)
 
-		if wJson != nil && event.IsResult() {
+		if wJson != nil && taskengine.IsResult(event) {
 			if printComma {
 				fmt.Fprint(wJson, ",\n")
 			} else {
@@ -99,7 +98,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 
 		}
 
-		if event.IsFirstSuccessOrLastResult() {
+		if taskengine.IsFirstSuccessOrLastResult(event) {
 
 			if event.Type() == taskengine.EventSuccess {
 				result := event.Result.(*demoResult)
