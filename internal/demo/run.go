@@ -88,7 +88,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 
 		progr.InitTrackerIfNew(tid)
 
-		if wJson != nil && event.IsResult() {
+		if wJson != nil && taskengine.IsResult(event) {
 			if printComma {
 				fmt.Fprint(wJson, ",\n")
 			} else {
@@ -99,7 +99,7 @@ func (scenario *Scenario) Run(eventc chan *taskengine.Event, wProgress, wJson io
 
 		}
 
-		if event.IsFirstSuccessOrLastResult() {
+		if taskengine.IsFirstSuccessOrLastResult(event) {
 
 			if event.Type() == taskengine.EventSuccess {
 				result := event.Result.(*demoResult)
